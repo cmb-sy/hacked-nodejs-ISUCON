@@ -1,0 +1,46 @@
+services:
+  webapp:
+    build: ./webapp
+    ports:
+      - "8080:8080"
+    environment:
+      - ISHOCON1_DB_HOST=mysql
+      - ISHOCON1_DB_PORT=3306
+      - ISHOCON1_DB_USER=root
+      - ISHOCON1_DB_PASSWORD=root
+      - ISHOCON1_DB_NAME=ishocon1
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./admin/init_db.sh:/docker-entrypoint-initdb.d/00_init_db.sh
+      - ./admin/init.sql:/data/init.sql
+      - ./admin/ishocon1.dump:/data/ishocon1.dump
+    healthcheck:
+      test:
+        ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  benchmarker:
+    build: ./admin/benchmarker
+    environment:
+      - ISHOCON1_DB_HOST=mysql
+      - ISHOCON1_DB_PORT=3306
+      - ISHOCON1_DB_USER=root
+      - ISHOCON1_DB_PASSWORD=root
+      - ISHOCON1_DB_NAME=ishocon1
+    depends_on:
+      webapp:
+        condition: service_started
+      mysql:
+        condition: service_healthy
+    command: ["./benchmark", "--ip", "webapp:8080"]
