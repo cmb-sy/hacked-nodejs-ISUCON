@@ -27,8 +27,6 @@ ISUCON は "Iikanjini Speed Up Contest" の略で、与えられた Web アプ�
 
 コンテスト当日、お題となる Web アプリケーションが動くサーバーが何台か与えられ、それを制限時間内でどこまでチューニングできるのかを競います。
 
-ベンチマーカーというツールが、ユーザーシナリオに沿った負荷試験を 1 分間実行し、その結果をスコアとして算出します。負荷試験中に捌けたリクエストの数によってスコアは変動し、Web サービスとして致命的なバグや、API の整合性が損なわれていれば Fail（0 点）となります。
-
 ---
 
 ## システム全体構成
@@ -104,13 +102,13 @@ ISUCON は "Iikanjini Speed Up Contest" の略で、与えられた Web アプ�
 ```
 webapp/
 ├── src/
-│   └── index.ts          # メインアプリケーション
-├── views/                # EJSテンプレート
+│   └── index.ts
+├── views/
 │   ├── index.ejs
 │   ├── login.ejs
 │   ├── product.ejs
 │   └── mypage.ejs
-├── public/               # 静的ファイル
+├── public/
 │   ├── css/
 │   └── images/
 ├── package.json
@@ -133,14 +131,13 @@ webapp/
 3. ヘルスチェック完了後、他コンテナが接続可能に
 ```
 
-**データベース名:** `ishocon1`（単一データベース）
+**データベース名:** `ishocon1`
 
 ### 3. Benchmarker（ベンチマーカー）
 
 **技術スタック:**
 
 - **言語**: Go 1.13
-- **HTTP クライアント**: 標準ライブラリ
 
 **ディレクトリ構造:**
 
@@ -323,8 +320,8 @@ cd /home/ishocon/benchmarker
 
 **オプション:**
 
-- `--ip IP`: ターゲットのIPアドレスとポートを指定（デフォルト: `127.0.0.1:80`）
-- **注意**: `--workload`オプションは使用できません。workloadは常に最大値（5）で固定されています。
+- `--ip IP`: ターゲットの IP アドレスとポートを指定（デフォルト: `127.0.0.1:80`）
+- **注意**: `--workload`オプションは使用できません。workload は常に最大値（5）で固定されています。
 
 **実行例:**
 
@@ -366,12 +363,6 @@ Validation はベンチマーク実行前にアプリケーションが正しく
 // 期待: HTTPステータス200
 ```
 
-**よくある失敗原因:**
-
-- `/initialize`エンドポイントが未実装
-- 初期化処理がタイムアウト（10 分超過）
-- 初期化中に DB エラーが発生
-
 #### 2. 商品一覧チェック (page=10)
 
 ```go
@@ -379,12 +370,6 @@ Validation はベンチマーク実行前にアプリケーションが正しく
 // 期待: 商品が正確に50件返される
 // 期待: 各商品のIDが1〜10000の範囲内
 ```
-
-**よくある失敗原因:**
-
-- ページングの計算ミス（0-indexed vs 1-indexed）
-- OFFSET 計算のバグ
-- 商品データの破損
 
 #### 3. 商品詳細・コメント数チェック
 
@@ -396,12 +381,6 @@ Validation はベンチマーク実行前にアプリケーションが正しく
 // POST /comments/10000
 // 期待: コメント数が21件に増加
 ```
-
-**よくある失敗原因:**
-
-- コメントのカウントロジックのバグ
-- コメント投稿後のキャッシュ問題
-- `id > 200000`のコメントが削除されていない
 
 #### 4. ログイン・購入テスト
 
@@ -415,12 +394,6 @@ Validation はベンチマーク実行前にアプリケーションが正しく
 //    期待: 購入した商品が履歴に含まれる
 ```
 
-**よくある失敗原因:**
-
-- セッション管理のバグ
-- 購入処理の DB 書き込み失敗
-- 履歴取得クエリのバグ
-
 #### 5. タイムアウトによる失敗
 
 各リクエストには**30 秒のタイムアウト**が設定されています。
@@ -429,41 +402,6 @@ Validation はベンチマーク実行前にアプリケーションが正しく
 Validation: GET /users/1500 チェック中...
 ERROR: timeout waiting for response
 ```
-
-**よくある原因:**
-
-- N+1 クエリによる大量の DB アクセス
-- 重い計算処理（全商品スキャン等）
-- データベース接続プールの枯渇
-
-### Validation 成功時のログ
-
-```
-2025/12/24 02:55:36 Start GET /initialize
-2025/12/24 02:55:36 GET /initialize completed in 35.268208ms
-2025/12/24 02:55:36 Benchmark Start!  Workload: 5
-2025/12/24 02:55:36 Validation: データ初期化中...
-2025/12/24 02:55:36 Validation: GET /index (page=10) チェック中...
-2025/12/24 02:55:41 Validation: GET /products/:id チェック中...
-2025/12/24 02:55:41 Validation: GET /users/1500 チェック中...
-2025/12/24 02:55:42 Validation: ユーザー 3966 でログイン・購入テスト実行中...
-2025/12/24 02:55:48 Validation: GET /users/3966 (ログイン後) チェック中...
-2025/12/24 02:55:49 Validation: コメント投稿テスト実行中...
-2025/12/24 02:55:50 Validation: GET /index (page=0, ログイン後) チェック中...
-2025/12/24 02:55:55 Validation: 全チェック完了
-```
-
-### Validation 失敗時のトラブルシューティング
-
-| エラーメッセージ               | 原因                             | 対処法                    |
-| ------------------------------ | -------------------------------- | ------------------------- |
-| `timeout waiting for response` | レスポンスが 30 秒以内に返らない | 重い処理の特定と最適化    |
-| `商品数が正しくありません`     | ページングのバグ                 | LIMIT/OFFSET の計算を確認 |
-| `コメント数が正しくありません` | コメントカウントのバグ           | WHERE 条件を確認          |
-| `購入履歴が正しくありません`   | 履歴の保存/取得のバグ            | INSERT/SELECT を確認      |
-| `Initialize failed`            | /initialize のエラー             | 初期化処理のログを確認    |
-
----
 
 ## スコア計算
 
@@ -524,7 +462,8 @@ services:
       - ./admin/init.sql:/data/init.sql
       - ./admin/ishocon1.dump:/data/ishocon1.dump
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      test:
+        ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -673,12 +612,3 @@ Terraform が EC2 構築時に GitHub からあなたの公開鍵を取得し、
 │
 │ 30 秒後に再実行（setInterval）
 ```
-
----
-
-## 参考資料
-
-- [Express.js 公式ドキュメント](https://expressjs.com/)
-- [MySQL 8.0 リファレンス](https://dev.mysql.com/doc/refman/8.0/en/)
-- [Docker Compose ドキュメント](https://docs.docker.com/compose/)
-- [Go 公式ドキュメント](https://golang.org/doc/)
