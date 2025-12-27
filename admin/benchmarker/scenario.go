@@ -15,13 +15,13 @@ import (
 )
 
 /*
-ログインをして、商品一覧ページに多めにアクセスする (画像読み込み含む)
-サイトに負荷をかけているのに、商品を買わない嫌なユーザ
+Logs in and frequently accesses the product list page (including image loading).
+A user who puts load on the site but doesn't buy any products.
 */
 func justLookingScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time) bool {
 	score := 0
-	resp := 200
-	var c []*http.Cookie
+	resp := 200  //200 OK
+	var c []*http.Cookie  //HTTP request cookie
 
 	_, email, password := getUserInfo(0)
 	resp, c = postLogin(c, email, password)
@@ -54,6 +54,7 @@ func justLookingScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time
 	}
 	score = 0
 
+	// The reason getProduct(c, 0) is called three times in a row is to simulate real user behavior
 	resp, c = getIndex(c, getRand(150, 199))
 	score = calcScore(score, resp)
 
@@ -73,8 +74,8 @@ func justLookingScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time
 }
 
 /*
-ログインしないで、ユーザページに多めにアクセスする
-他人の購入履歴を見てニヤニヤしている、ネットストーカー
+Accesses user pages frequently without logging in.
+A stalker who enjoys looking at other people's purchase history.
 */
 func stalkerScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time) bool {
 	score := 0
@@ -84,7 +85,7 @@ func stalkerScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time) bo
 	resp, c = getIndex(c, 0)
 	score = calcScore(score, resp)
 
-	// id:1234 よく商品を買うユーザ
+	// id:1234 A user who frequently buys products
 	resp, c = getUserPage(c, 1234)
 	score = calcScore(score, resp)
 
@@ -101,15 +102,15 @@ func stalkerScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time) bo
 }
 
 /*
-ひたすら商品を買って、コメントをする
-近年経済成長し、品質の高い先進国の商品を買いたくなっている人
+Continuously buys products and leaves comments.
+A person from a rapidly growing economy who wants to buy high-quality products from developed countries.
 */
 func bakugaiScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time) bool {
 	score := 0
 	resp := 200
 	var c []*http.Cookie
 
-	// 1/3 の確率で id:1234 のユーザが爆買いする
+	// 1/3 chance that user id:1234 goes on a shopping spree
 	uID := 0
 	if getRand(1, 2) == 1 {
 		uID = 1234
@@ -142,8 +143,8 @@ func bakugaiScenario(wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time) bo
 	return updateScore(score, wg, m, finishTime)
 }
 
-// 以下、スコア計算用
-// 戻り値: このgoroutineが終了すべきかどうか
+// The following is for score calculation.
+// Return value: Whether this goroutine should terminate.
 func updateScore(score int, wg *sync.WaitGroup, m *sync.Mutex, finishTime time.Time) bool {
 	m.Lock()
 	defer m.Unlock()
@@ -180,12 +181,11 @@ func postScore() {
 	apiURL := os.Getenv("BENCH_SCOREBOARD_APIGW_URL")
 	teamName := os.Getenv("BENCH_TEAM_NAME")
 	
-	// 片方でも空なら送信しない
+	// If either one is empty, do not send
 	if apiURL == "" || teamName == "" {
 		return
 	}
 
-	// 末尾のスラッシュを処理
 	apiURL = strings.TrimSuffix(apiURL, "/")
 
 	location, err := time.LoadLocation("Asia/Tokyo")
@@ -208,7 +208,7 @@ func postScore() {
 		return
 	}
 
-	// 正しいURLを構築
+	// Build the correct URL
 	req, err := http.NewRequest("PUT", apiURL+"/teams", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Printf("Failed to create request: %v", err)
@@ -217,7 +217,7 @@ func postScore() {
 
 	req.Header.Set("Content-Type", "application/json")
 
-	// 10秒のタイムアウトを設定
+	// Set a timeout of 10 seconds
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -227,6 +227,8 @@ func postScore() {
 		log.Printf("Failed to send score: %v", err)
 		return
 	}
+	// Preventing Resource Leaks 
+	// A resource leak occurs when a program uses resources (such as memory, files, or network connections) and does not release them.
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {

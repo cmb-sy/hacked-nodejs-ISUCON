@@ -44,17 +44,6 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-// 環境変数を整数として取得するヘルパー関数
-func getEnvInt(key string, fallback int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
-		log.Printf("Warning: Invalid %s value '%s', using fallback: %d", key, value, fallback)
-	}
-	return fallback
-}
-
 func getDB() (*sql.DB, error) {
 	user := getEnv("ISHOCON1_DB_USER", "ishocon")
 	pass := getEnv("ISHOCON1_DB_PASSWORD", "ishocon")
@@ -103,7 +92,7 @@ Note: workload is fixed to maximum value (5)`)
 	flag.Parse()
 	host = "http://" + *ip
 
-	// workloadは常に最大値を使用
+	// Always use the maximum value for workload
 	workload := 5
 	log.Printf("Using maximum workload: %d", workload)
 

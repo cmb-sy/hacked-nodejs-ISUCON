@@ -25,7 +25,6 @@ func getInitialize() {
 	log.Printf("GET /initialize completed in %v", elapsed)
 }
 
-// 基本アクセス
 func getIndex(c []*http.Cookie, page int) (int, []*http.Cookie) {
 	return httpRequest("GET", "/?page="+strconv.Itoa(page), nil, c)
 }
