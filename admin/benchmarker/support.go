@@ -2,18 +2,16 @@ package main
 
 import (
 	"math/rand"
-	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
 
 func choice(s []string) string {
-	rand.Seed(time.Now().UnixNano())
 	i := rand.Intn(len(s))
 	return s[i]
 }
 
-// ランダムにユーザー情報を取得
+// Get user information randomly
 func getUserInfo(id int) (int, string, string) {
 	if id == 0 {
 		id = getRand(1, 5000)
@@ -33,8 +31,7 @@ func getUserInfo(id int) (int, string, string) {
 	return id, email, password
 }
 
-// from から to までの値をランダムに取得
+// Get a random value from from to to
 func getRand(from int, to int) int {
-	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(to+1-from) + from
 }
