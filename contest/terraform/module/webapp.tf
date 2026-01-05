@@ -1,6 +1,4 @@
-# webapp のコードとデータをS3にアップロードしてEC2に配布
-
-# webappコード用のS3バケット
+# S3 bucket for the webapp code
 resource "aws_s3_bucket" "webapp_code" {
   bucket_prefix = "${var.name}-webapp-code-"
 }
@@ -14,7 +12,7 @@ resource "aws_s3_bucket_public_access_block" "webapp_code" {
   restrict_public_buckets = true
 }
 
-# webapp をzip化
+# webapp to zip
 data "archive_file" "webapp_nodejs" {
   type        = "zip"
   output_path = "${path.module}/webapp_nodejs.zip"
@@ -22,7 +20,7 @@ data "archive_file" "webapp_nodejs" {
   excludes    = ["node_modules", "dist", ".git"]
 }
 
-# S3にアップロード
+# Upload to S3
 resource "aws_s3_object" "webapp_nodejs" {
   bucket = aws_s3_bucket.webapp_code.id
   key    = "webapp_nodejs.zip"
@@ -31,28 +29,28 @@ resource "aws_s3_object" "webapp_nodejs" {
   depends_on = [data.archive_file.webapp_nodejs]
 }
 
-# データベースダンプファイルをS3にアップロード
+# Upload the database dump file to S3
 resource "aws_s3_object" "ishocon1_dump" {
   bucket = aws_s3_bucket.webapp_code.id
   key    = "ishocon1.dump.tar.gz"
   source = "${path.module}/../../../admin/ishocon1.dump.tar.gz"
 }
 
-# init.sqlをS3にアップロード
+# Upload init.sql to S3
 resource "aws_s3_object" "init_sql" {
   bucket = aws_s3_bucket.webapp_code.id
   key    = "admin/init.sql"
   source = "${path.module}/../../../admin/init.sql"
 }
 
-# setup.shをS3にアップロード
+# Upload setup.sh to S3
 resource "aws_s3_object" "setup_sh" {
   bucket = aws_s3_bucket.webapp_code.id
   key    = "admin/setup.sh"
   source = "${path.module}/../../../admin/setup.sh"
 }
 
-# ベンチマーカーをzip化してS3にアップロード
+# Zip the benchmarker and upload to S3
 data "archive_file" "benchmarker" {
   type        = "zip"
   output_path = "${path.module}/benchmarker.zip"
@@ -68,7 +66,7 @@ resource "aws_s3_object" "benchmarker" {
   depends_on = [data.archive_file.benchmarker]
 }
 
-# EC2インスタンスがS3からダウンロードできるようにIAMロールを作成
+# Create an IAM role for the EC2 instance to be able to download from S3
 resource "aws_iam_role" "ec2_webapp" {
   name = "${var.name}-ec2-webapp"
 

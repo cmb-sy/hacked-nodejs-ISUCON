@@ -1,6 +1,6 @@
 locals {
   admins = [
-    "cmb-sy", # 管理者のGitHub ID
+    "cmb-sy", # GitHub ID of the administrator
   ]
 
   teams = {

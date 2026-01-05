@@ -17,7 +17,7 @@ func getInitialize() {
 	log.Print("Start GET /initialize")
 	startTime := time.Now()
 	httpRequest("GET", "/initialize", nil, nil)
-	elapsed := time.Now().Sub(startTime)
+	elapsed := time.Since(startTime)
 	if elapsed > 10*time.Minute {
 		log.Printf("Timeover at GET /initialize (took %v)", elapsed)
 		os.Exit(1)
@@ -71,7 +71,7 @@ func buyProductForValidation(c []*http.Cookie, userId int, productID int) (int, 
 		productID = getRand(1, 10000)
 	}
 
-	// アプリケーションのエンドポイントを通じて購入処理を実行
+	// Execute purchase processing via the application endpoint
 	return httpRequest("POST", "/products/buy/"+strconv.Itoa(productID), nil, c)
 }
 
@@ -92,7 +92,7 @@ func httpRequest(method string, path string, params url.Values, cookies []*http.
 	CookieURL, _ := url.Parse(host + path)
 	jar.SetCookies(CookieURL, cookies)
 	
-	// /initialize用に長めのタイムアウトを設定
+	// Set a longer timeout for /initialize
 	timeout := 30 * time.Second
 	if path == "/initialize" {
 		timeout = 12 * time.Minute

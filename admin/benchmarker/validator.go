@@ -76,9 +76,21 @@ func initializeData() {
 func validateIndex(page int, loggedIn bool) {
 	var flg, flg1, flg2, flg3 bool
 	var flg50, flgOrder, flgReview, flgPrdExp bool
-	doc, err := goquery.NewDocument(host + "/?page=" + strconv.Itoa(page))
+	resp, err := http.Get(host + "/?page=" + strconv.Itoa(page))
 	if err != nil {
 		log.Print("Cannot GET /index")
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("GET /index returned status %d", resp.StatusCode)
+		os.Exit(1)
+	}
+	
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		log.Print("Cannot parse HTML")
 		os.Exit(1)
 	}
 
@@ -172,9 +184,21 @@ func validateProducts(loggedIn bool) {
 	var flg bool
 	var flgImage, flgPrdExp bool
 	var actualImageSrc string
-	doc, err := goquery.NewDocument(host + "/products/1500")
+	resp, err := http.Get(host + "/products/1500")
 	if err != nil {
 		log.Print("Cannot GET /products/:id")
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("GET /products/:id returned status %d", resp.StatusCode)
+		os.Exit(1)
+	}
+	
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		log.Print("Cannot parse HTML")
 		os.Exit(1)
 	}
 	// Verify image path
@@ -222,9 +246,21 @@ func validateProducts(loggedIn bool) {
 func validateUsers(id int, loggedIn bool) {
 	var flg bool
 	var flg30, flgDOM, flgTotal, flgTime bool
-	doc, err := goquery.NewDocument(host + "/users/" + strconv.Itoa(id))
+	resp, err := http.Get(host + "/users/" + strconv.Itoa(id))
 	if err != nil {
 		log.Print("Cannot GET /users/:id")
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("GET /users/:id returned status %d", resp.StatusCode)
+		os.Exit(1)
+	}
+	
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	if err != nil {
+		log.Print("Cannot parse HTML")
 		os.Exit(1)
 	}
 
